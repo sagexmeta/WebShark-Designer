@@ -460,6 +460,41 @@
           </div>
         </section>
 
+        <section class="panel-section" id="panel-ddl" data-panel-id="panel-ddl" data-visible-roles="architect,engineer,analyst" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>DDL studio</h2>
+              <span>Generate starter database setup code from the current diagram</span>
+            </div>
+            <span class="drag-hint">drag</span>
+          </div>
+          <div class="properties-form">
+            <label>
+              Target DBMS
+              <select id="ddlEngineSelect">
+                <option value="postgresql">PostgreSQL</option>
+                <option value="mysql">MySQL</option>
+                <option value="sqlite">SQLite</option>
+                <option value="sqlserver">SQL Server</option>
+              </select>
+            </label>
+            <label>
+              Database or schema name
+              <input type="text" id="ddlSchemaName" value="webshark_app" placeholder="webshark_app">
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="ddlIncludeAudit" checked>
+              Include created/updated audit columns
+            </label>
+            <div class="quick-actions">
+              <button type="button" id="generateDdlBtn">Generate DDL</button>
+              <button type="button" class="secondary" id="copyDdlBtn">Copy</button>
+              <button type="button" class="secondary" id="downloadDdlBtn">Download</button>
+            </div>
+            <textarea id="ddlOutput" class="code-output" rows="12" placeholder="Generated SQL DDL appears here."></textarea>
+          </div>
+        </section>
+
         <section class="panel-section" id="panel-ai" data-panel-id="panel-ai" data-visible-roles="architect,engineer,designer,analyst" draggable="true">
           <div class="panel-header panel-handle">
             <div>

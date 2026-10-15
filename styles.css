@@ -857,6 +857,12 @@ body[data-glass="false"] .topbar {
   transition: width var(--motion-fast) ease;
 }
 
+.code-output {
+  min-height: 220px;
+  font-family: Consolas, "Courier New", monospace;
+  line-height: 1.5;
+}
+
 .toast-stack {
   position: fixed;
   right: 1rem;

@@ -9,12 +9,12 @@ const ROLE_PRESETS = {
   architect: {
     label: "Architect",
     summary: "Architecture-first layout with AI, exports, logs, and workspace orchestration.",
-    panels: ["panel-library", "panel-custom", "panel-workspaces", "panel-properties", "panel-board-style", "panel-exports", "panel-ai"],
+    panels: ["panel-library", "panel-custom", "panel-workspaces", "panel-properties", "panel-board-style", "panel-exports", "panel-ddl", "panel-ai"],
   },
   engineer: {
     label: "Engineer",
     summary: "Implementation-focused layout with technical blocks, properties, AI, and diagnostics.",
-    panels: ["panel-library", "panel-custom", "panel-workspaces", "panel-properties", "panel-board-style", "panel-ai"],
+    panels: ["panel-library", "panel-custom", "panel-workspaces", "panel-properties", "panel-board-style", "panel-ddl", "panel-ai"],
   },
   designer: {
     label: "Designer",
@@ -24,7 +24,7 @@ const ROLE_PRESETS = {
   analyst: {
     label: "Analyst",
     summary: "Insight-oriented layout emphasizing logs, exports, workspaces, and AI interpretation.",
-    panels: ["panel-workspaces", "panel-exports", "panel-ai"],
+    panels: ["panel-workspaces", "panel-exports", "panel-ddl", "panel-ai"],
   },
 };
 
@@ -58,7 +58,7 @@ const DEFAULT_UI = {
   logHeight: 260,
   panelOrder: {
     leftDock: ["panel-library", "panel-custom", "panel-workspaces"],
-    rightDock: ["panel-properties", "panel-board-style", "panel-exports", "panel-ai"],
+    rightDock: ["panel-properties", "panel-board-style", "panel-exports", "panel-ddl", "panel-ai"],
   },
 };
 
@@ -156,6 +156,13 @@ const dom = {
   createCustomElementBtn: document.querySelector("#createCustomElementBtn"),
   saveSelectedElementBtn: document.querySelector("#saveSelectedElementBtn"),
   customPackagesList: document.querySelector("#customPackagesList"),
+  ddlEngineSelect: document.querySelector("#ddlEngineSelect"),
+  ddlSchemaName: document.querySelector("#ddlSchemaName"),
+  ddlIncludeAudit: document.querySelector("#ddlIncludeAudit"),
+  generateDdlBtn: document.querySelector("#generateDdlBtn"),
+  copyDdlBtn: document.querySelector("#copyDdlBtn"),
+  downloadDdlBtn: document.querySelector("#downloadDdlBtn"),
+  ddlOutput: document.querySelector("#ddlOutput"),
   aiModelSelect: document.querySelector("#aiModelSelect"),
   downloadModelBtn: document.querySelector("#downloadModelBtn"),
   aiStatus: document.querySelector("#aiStatus"),
@@ -959,6 +966,7 @@ function setFieldAvailability(kind) {
 
 function handleNodePointerDown(event, nodeId) {
   event.stopPropagation();
+  event.preventDefault();
   const resizeTarget = event.target.closest(".resize-handle");
   if (resizeTarget) {
     startNodeResize(event, nodeId);
@@ -969,8 +977,6 @@ function handleNodePointerDown(event, nodeId) {
     return;
   }
   boardState().selection = { kind: "node", id: nodeId };
-  addLog("trace", "selection", "Node selected", { node: nodeId });
-  render();
   startNodeDrag(event, nodeId);
 }
 
@@ -979,15 +985,23 @@ function startNodeDrag(event, nodeId) {
   if (!node) {
     return;
   }
+  const dragTarget = event.currentTarget;
+  if (dragTarget?.setPointerCapture) {
+    dragTarget.setPointerCapture(event.pointerId);
+  }
   const startPointer = getBoardCoordinates(event);
   const startX = node.x;
   const startY = node.y;
+  let moved = false;
   setStatus(`Moving ${node.label}...`);
 
   const onMove = (moveEvent) => {
     const current = getBoardCoordinates(moveEvent);
-    node.x = maybeSnap(startX + (current.x - startPointer.x));
-    node.y = maybeSnap(startY + (current.y - startPointer.y));
+    const nextX = clamp(maybeSnap(startX + (current.x - startPointer.x)), 0, BOARD_WIDTH - node.width);
+    const nextY = clamp(maybeSnap(startY + (current.y - startPointer.y)), 0, BOARD_HEIGHT - node.height);
+    moved = moved || nextX !== node.x || nextY !== node.y;
+    node.x = nextX;
+    node.y = nextY;
     node.x = clamp(node.x, 0, BOARD_WIDTH - node.width);
     node.y = clamp(node.y, 0, BOARD_HEIGHT - node.height);
     renderBoard();
@@ -996,13 +1010,21 @@ function startNodeDrag(event, nodeId) {
   const onUp = () => {
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
-    saveCurrentWorkspace(false, "board");
-    addLog("info", "board", "Node moved", {
-      node: node.label,
-      from: { x: startX, y: startY },
-      to: { x: node.x, y: node.y },
-    });
-    setStatus(`${node.label} moved.`);
+    if (dragTarget?.releasePointerCapture) {
+      dragTarget.releasePointerCapture(event.pointerId);
+    }
+    if (moved) {
+      saveCurrentWorkspace(false, "board");
+      addLog("info", "board", "Node moved", {
+        node: node.label,
+        from: { x: startX, y: startY },
+        to: { x: node.x, y: node.y },
+      });
+      setStatus(`${node.label} moved.`);
+    } else {
+      setStatus(`${node.label} selected.`);
+    }
+    render();
   };
 
   window.addEventListener("pointermove", onMove);
@@ -1013,6 +1035,10 @@ function startNodeResize(event, nodeId) {
   const node = getNode(nodeId);
   if (!node) {
     return;
+  }
+  const resizeTarget = event.currentTarget;
+  if (resizeTarget?.setPointerCapture) {
+    resizeTarget.setPointerCapture(event.pointerId);
   }
   const startPointer = getBoardCoordinates(event);
   const startWidth = node.width;
@@ -1029,6 +1055,9 @@ function startNodeResize(event, nodeId) {
   const onUp = () => {
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
+    if (resizeTarget?.releasePointerCapture) {
+      resizeTarget.releasePointerCapture(event.pointerId);
+    }
     saveCurrentWorkspace(false, "board");
     addLog("info", "board", "Node resized", {
       node: node.label,
@@ -1250,6 +1279,219 @@ function exportAll() {
   downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), `${slug(currentUser()?.username ?? "user")}-workspaces.json`);
   addLog("info", "export", "All workspaces exported", { count: userWorkspaces().length });
   setStatus("All workspaces exported as JSON.");
+}
+
+function generateDdl() {
+  const engine = dom.ddlEngineSelect.value;
+  const schemaName = sanitizeSqlIdentifier(dom.ddlSchemaName.value || "webshark_app");
+  const includeAudit = dom.ddlIncludeAudit.checked;
+  const tableNodes = getDdlTableNodes();
+  if (tableNodes.length === 0) {
+    dom.ddlOutput.value = "-- Add database, process, service, or data nodes to generate DDL.";
+    setStatus("No table candidates found for DDL generation.");
+    return dom.ddlOutput.value;
+  }
+
+  const lines = [];
+  lines.push(`-- Generated by WebShark Designer for ${engine}`);
+  lines.push(`-- Source workspace: ${currentWorkspace()?.name ?? "Untitled"}`);
+  lines.push("");
+  lines.push(...buildEnginePrelude(engine, schemaName));
+  lines.push("");
+
+  const tableLookup = new Map(tableNodes.map((node) => [node.id, sanitizeSqlIdentifier(node.label)]));
+  tableNodes.forEach((node) => {
+    const tableName = tableLookup.get(node.id);
+    const columns = buildTableColumns(node, tableLookup, includeAudit, engine, schemaName);
+    lines.push(`CREATE TABLE ${qualifyTableName(engine, schemaName, tableName)} (`);
+    lines.push(columns.map((column) => `  ${column}`).join(",\n"));
+    lines.push(");");
+    lines.push("");
+  });
+
+  dom.ddlOutput.value = lines.join("\n").trim();
+  addLog("info", "ddl", "DDL generated", { engine, schemaName, tables: tableNodes.length });
+  setStatus(`Generated ${engine} DDL.`);
+  return dom.ddlOutput.value;
+}
+
+function getDdlTableNodes() {
+  const allowedTypes = new Set(["database", "rectangle", "rounded", "ellipse"]);
+  return boardState().nodes.filter((node) => allowedTypes.has(node.type));
+}
+
+function buildEnginePrelude(engine, schemaName) {
+  if (engine === "postgresql") {
+    return [`CREATE SCHEMA IF NOT EXISTS ${schemaName};`, `SET search_path TO ${schemaName};`];
+  }
+  if (engine === "mysql") {
+    return [`CREATE DATABASE IF NOT EXISTS \`${schemaName}\`;`, `USE \`${schemaName}\`;`];
+  }
+  if (engine === "sqlserver") {
+    return [`IF DB_ID(N'${schemaName}') IS NULL CREATE DATABASE [${schemaName}];`, "GO", `USE [${schemaName}];`];
+  }
+  return ["-- SQLite uses the current database file."];
+}
+
+function qualifyTableName(engine, schemaName, tableName) {
+  if (engine === "postgresql") {
+    return `${schemaName}.${tableName}`;
+  }
+  if (engine === "mysql") {
+    return `\`${schemaName}\`.\`${tableName}\``;
+  }
+  if (engine === "sqlserver") {
+    return `[dbo].[${tableName}]`;
+  }
+  return tableName;
+}
+
+function buildTableColumns(node, tableLookup, includeAudit, engine, schemaName) {
+  const columns = [primaryKeyForEngine(engine)];
+  columns.push(defaultTextColumn(engine));
+
+  const connectedNotes = getConnectedNodes(node.id, "note");
+  connectedNotes.forEach((note) => {
+    parseColumnsFromNote(note.label, engine).forEach((column) => {
+      if (!columns.includes(column)) {
+        columns.push(column);
+      }
+    });
+  });
+
+  const relatedTables = boardState().connectors
+    .map((connector) => {
+      if (connector.from === node.id && tableLookup.has(connector.to)) {
+        return tableLookup.get(connector.to);
+      }
+      if (connector.to === node.id && tableLookup.has(connector.from)) {
+        return tableLookup.get(connector.from);
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  relatedTables.forEach((tableName) => {
+    columns.push(foreignKeyColumn(tableName, engine, schemaName));
+  });
+
+  if (includeAudit) {
+    columns.push(...auditColumnsForEngine(engine));
+  }
+
+  return Array.from(new Set(columns));
+}
+
+function getConnectedNodes(nodeId, type) {
+  const ids = boardState().connectors
+    .flatMap((connector) => {
+      if (connector.from === nodeId) {
+        return [connector.to];
+      }
+      if (connector.to === nodeId) {
+        return [connector.from];
+      }
+      return [];
+    });
+  return boardState().nodes.filter((node) => ids.includes(node.id) && (!type || node.type === type));
+}
+
+function parseColumnsFromNote(label, engine) {
+  return label
+    .split(/\n|,/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^([a-zA-Z0-9_]+)\s*[:|-]\s*([a-zA-Z0-9()_ ]+)$/);
+      if (!match) {
+        return null;
+      }
+      const columnName = sanitizeSqlIdentifier(match[1]);
+      const type = normalizeSqlType(match[2], engine);
+      return sqlQuote(columnName, engine) + " " + type;
+    })
+    .filter(Boolean);
+}
+
+function primaryKeyForEngine(engine) {
+  if (engine === "postgresql") {
+    return "id BIGSERIAL PRIMARY KEY";
+  }
+  if (engine === "mysql") {
+    return "id BIGINT AUTO_INCREMENT PRIMARY KEY";
+  }
+  if (engine === "sqlserver") {
+    return "id BIGINT IDENTITY(1,1) PRIMARY KEY";
+  }
+  return "id INTEGER PRIMARY KEY AUTOINCREMENT";
+}
+
+function defaultTextColumn(engine) {
+  return `${sqlQuote("name", engine)} ${engine === "sqlite" ? "TEXT" : "VARCHAR(255)"} NOT NULL`;
+}
+
+function foreignKeyColumn(tableName, engine, schemaName) {
+  const column = `${tableName}_id`;
+  const target = qualifyTableName(engine, schemaName, tableName);
+  if (engine === "sqlserver") {
+    return `${sqlQuote(column, engine)} BIGINT REFERENCES ${target}(id)`;
+  }
+  return `${sqlQuote(column, engine)} BIGINT REFERENCES ${target}(id)`;
+}
+
+function auditColumnsForEngine(engine) {
+  if (engine === "sqlite") {
+    return ["created_at TEXT DEFAULT CURRENT_TIMESTAMP", "updated_at TEXT DEFAULT CURRENT_TIMESTAMP"];
+  }
+  if (engine === "sqlserver") {
+    return ["created_at DATETIME2 DEFAULT SYSUTCDATETIME()", "updated_at DATETIME2 DEFAULT SYSUTCDATETIME()"];
+  }
+  return ["created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP", "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"];
+}
+
+function normalizeSqlType(raw, engine) {
+  const value = raw.trim().toLowerCase();
+  if (value.startsWith("int")) {
+    return engine === "sqlite" ? "INTEGER" : "INTEGER";
+  }
+  if (value.startsWith("bigint")) {
+    return "BIGINT";
+  }
+  if (value.startsWith("bool")) {
+    return engine === "sqlite" ? "INTEGER" : "BOOLEAN";
+  }
+  if (value.startsWith("date")) {
+    return engine === "sqlite" ? "TEXT" : "DATE";
+  }
+  if (value.startsWith("timestamp") || value.startsWith("datetime")) {
+    return engine === "sqlserver" ? "DATETIME2" : engine === "sqlite" ? "TEXT" : "TIMESTAMP";
+  }
+  if (value.startsWith("uuid")) {
+    return engine === "sqlite" ? "TEXT" : "UUID";
+  }
+  if (value.startsWith("decimal")) {
+    return "DECIMAL(12,2)";
+  }
+  return value.toUpperCase().includes("CHAR") ? raw.toUpperCase() : (engine === "sqlite" ? "TEXT" : "VARCHAR(255)");
+}
+
+function sanitizeSqlIdentifier(value) {
+  return String(value || "item")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    || "item";
+}
+
+function sqlQuote(identifier, engine) {
+  if (engine === "mysql") {
+    return `\`${identifier}\``;
+  }
+  if (engine === "sqlserver") {
+    return `[${identifier}]`;
+  }
+  return identifier;
 }
 
 function buildSvgMarkup() {
@@ -1800,6 +2042,12 @@ async function executeAiActions(prompt) {
     remainingPrompt = remainingPrompt.replace(exportMatch[0], "").trim();
   }
 
+  if (/\b(?:generate|create)\s+ddl\b/i.test(lower) || /\bdatabase\s+ddl\b/i.test(lower)) {
+    const ddl = generateDdl();
+    executed.push(`Generated DDL (${ddl.split("\n").length} lines).`);
+    remainingPrompt = remainingPrompt.replace(/\b(?:generate|create)\s+ddl\b/i, "").replace(/\bdatabase\s+ddl\b/i, "").trim();
+  }
+
   if (boardChanged) {
     saveCurrentWorkspace(false, "ai");
     render();
@@ -2070,6 +2318,19 @@ function bindEvents() {
 
   dom.createCustomElementBtn.addEventListener("click", createCustomElement);
   dom.saveSelectedElementBtn.addEventListener("click", saveSelectedElement);
+  dom.generateDdlBtn.addEventListener("click", generateDdl);
+  dom.copyDdlBtn.addEventListener("click", async () => {
+    const ddl = dom.ddlOutput.value || generateDdl();
+    await navigator.clipboard.writeText(ddl);
+    addLog("info", "ddl", "DDL copied to clipboard", { length: ddl.length });
+    showToast("DDL copied");
+  });
+  dom.downloadDdlBtn.addEventListener("click", () => {
+    const ddl = dom.ddlOutput.value || generateDdl();
+    downloadBlob(new Blob([ddl], { type: "text/sql" }), `${sanitizeSqlIdentifier(dom.ddlSchemaName.value || "webshark_app")}.sql`);
+    addLog("info", "ddl", "DDL downloaded", { length: ddl.length });
+    showToast("DDL downloaded");
+  });
 
   dom.logQueryInput.addEventListener("input", renderLogs);
   dom.logLevelFilter.addEventListener("change", renderLogs);
