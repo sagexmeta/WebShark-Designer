@@ -7,23 +7,185 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-mark">WS</div>
+        <div>
+          <h1>WebShark Designer</h1>
+          <p>Sign in to access role-aware workspaces, detailed logs, and local AI-assisted design.</p>
+        </div>
+      </div>
+      <div class="auth-form">
+        <label>
+          Username
+          <input type="text" id="authUsername" placeholder="designer01">
+        </label>
+        <label>
+          Password
+          <input type="password" id="authPassword" placeholder="••••••••">
+        </label>
+        <label>
+          Role
+          <select id="authRole">
+            <option value="architect">Architect</option>
+            <option value="engineer">Engineer</option>
+            <option value="designer">Designer</option>
+            <option value="analyst">Analyst</option>
+          </select>
+        </label>
+        <div class="auth-actions">
+          <button type="button" id="signInBtn">Sign in</button>
+          <button type="button" class="secondary" id="registerBtn">Create account</button>
+        </div>
+        <p class="tiny-note">Accounts are stored locally in the browser because this app is fully static.</p>
+        <div id="authMessage" class="auth-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-modal hidden" id="settingsModal">
+    <div class="settings-card">
+      <div class="panel-header">
+        <div>
+          <h2>Workspace options</h2>
+          <span>Simple, configurable behavior for role-aware design work.</span>
+        </div>
+        <button type="button" class="ghost-btn" id="closeSettingsBtn">Close</button>
+      </div>
+
+      <div class="settings-grid">
+        <label>
+          Theme
+          <select id="settingsTheme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </label>
+        <label>
+          Role
+          <select id="settingsRole">
+            <option value="architect">Architect</option>
+            <option value="engineer">Engineer</option>
+            <option value="designer">Designer</option>
+            <option value="analyst">Analyst</option>
+          </select>
+        </label>
+        <label>
+          Animation style
+          <select id="settingsAnimations">
+            <option value="off">Off</option>
+            <option value="subtle">Subtle</option>
+            <option value="lively">Lively</option>
+          </select>
+        </label>
+        <label>
+          Autosave seconds
+          <input type="number" id="settingsAutosave" min="5" max="180" step="5">
+        </label>
+        <label>
+          Default export
+          <select id="settingsDefaultExport">
+            <option value="png">PNG</option>
+            <option value="svg">SVG</option>
+            <option value="pdf">PDF</option>
+            <option value="jpg">JPG</option>
+            <option value="webp">WEBP</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+        </label>
+        <label>
+          Log level
+          <select id="settingsLogLevel">
+            <option value="trace">Trace</option>
+            <option value="info">Info</option>
+            <option value="warn">Warn</option>
+            <option value="error">Error</option>
+          </select>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsCompactMode">
+          Compact UI
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsShowGrid">
+          Show grid
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsSnapToGrid">
+          Snap to grid
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsPanelSnap">
+          Panel docking hints
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsHints">
+          Show hints
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsAiLogAccess">
+          Allow AI log access
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsAiLiveLogs">
+          Stream new logs into AI context
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="settingsGlassPanels">
+          Glass panels
+        </label>
+      </div>
+
+      <div class="settings-actions">
+        <button type="button" id="applySettingsBtn">Apply settings</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-shell hidden" id="appShell">
     <header class="topbar">
       <div class="brand-block">
         <div class="brand-mark">WS</div>
         <div>
           <h1>WebShark Designer</h1>
-          <p>Technical diagramming and visual design in one browser workspace.</p>
+          <p id="roleSummary">Technical design workspace.</p>
         </div>
+      </div>
+
+      <div class="workspace-toolbar toolbar-group">
+        <label class="toolbar-label">
+          Workspace
+          <select id="workspaceSelect"></select>
+        </label>
+        <button type="button" id="newWorkspaceBtn">New workspace</button>
+        <button type="button" id="saveWorkspaceBtn">Save workspace</button>
+        <button type="button" id="duplicateWorkspaceBtn">Duplicate</button>
+        <button type="button" class="secondary" id="deleteWorkspaceBtn">Delete</button>
       </div>
 
       <div class="toolbar-group file-tools">
         <button type="button" id="newBoardBtn">New board</button>
         <button type="button" id="sampleBoardBtn">Load sample</button>
-        <button type="button" id="importJsonBtn">Import JSON</button>
-        <button type="button" id="exportJsonBtn">Export JSON</button>
-        <button type="button" id="exportSvgBtn">Export SVG</button>
-        <button type="button" id="exportPngBtn">Export PNG</button>
+        <button type="button" id="importJsonBtn">Import</button>
+        <label class="toolbar-label">
+          Export
+          <select id="exportFormatSelect">
+            <option value="png">PNG</option>
+            <option value="svg">SVG</option>
+            <option value="pdf">PDF</option>
+            <option value="jpg">JPG</option>
+            <option value="webp">WEBP</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+        </label>
+        <button type="button" id="exportCurrentBtn">Export current</button>
+        <button type="button" id="exportAllBtn">Export all</button>
         <input type="file" id="importJsonInput" accept=".json,application/json" hidden>
       </div>
 
@@ -34,90 +196,115 @@
         <button type="button" id="duplicateSelectionBtn">Duplicate</button>
       </div>
 
-      <div class="toolbar-group zoom-tools">
-        <button type="button" id="zoomOutBtn">-</button>
-        <label class="zoom-readout" for="zoomRange">
-          <span id="zoomPercent">100%</span>
-        </label>
-        <input type="range" id="zoomRange" min="50" max="160" step="10" value="100">
-        <button type="button" id="zoomInBtn">+</button>
+      <div class="toolbar-group utility-tools">
+        <button type="button" class="ghost-btn" id="themeToggleBtn">Toggle theme</button>
+        <button type="button" class="ghost-btn" id="openSettingsBtn">Options</button>
+        <div class="profile-chip">
+          <strong id="currentUserDisplay">Guest</strong>
+          <span id="currentRoleDisplay">Architect</span>
+        </div>
       </div>
     </header>
 
-    <main class="workspace-layout">
-      <aside class="left-panel">
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Shape library</h2>
-            <span>Click to add</span>
+    <div class="workspace-shell">
+      <aside class="dock left-dock" id="leftDock">
+        <section class="panel-section" id="panel-library" data-panel-id="panel-library" data-visible-roles="architect,engineer,designer" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>Shape library</h2>
+              <span>Technical and visual building blocks</span>
+            </div>
+            <span class="drag-hint">drag</span>
           </div>
           <div class="shape-grid" id="shapeLibrary">
-            <button type="button" class="shape-card" data-shape="rectangle">
-              <span class="shape-preview preview-rectangle"></span>
-              <strong>Process</strong>
-            </button>
-            <button type="button" class="shape-card" data-shape="rounded">
-              <span class="shape-preview preview-rounded"></span>
-              <strong>Service</strong>
-            </button>
-            <button type="button" class="shape-card" data-shape="ellipse">
-              <span class="shape-preview preview-ellipse"></span>
-              <strong>Data</strong>
-            </button>
-            <button type="button" class="shape-card" data-shape="diamond">
-              <span class="shape-preview preview-diamond"></span>
-              <strong>Decision</strong>
-            </button>
-            <button type="button" class="shape-card" data-shape="triangle">
-              <span class="shape-preview preview-triangle"></span>
-              <strong>Alert</strong>
-            </button>
-            <button type="button" class="shape-card" data-shape="note">
-              <span class="shape-preview preview-note"></span>
-              <strong>Note</strong>
-            </button>
-            <button type="button" class="shape-card" data-shape="database">
-              <span class="shape-preview preview-database"></span>
-              <strong>Database</strong>
-            </button>
-            <button type="button" class="shape-card" data-shape="text">
-              <span class="shape-preview preview-text">T</span>
-              <strong>Text</strong>
-            </button>
+            <button type="button" class="shape-card" data-shape="rectangle"><span class="shape-preview preview-rectangle"></span><strong>Process</strong></button>
+            <button type="button" class="shape-card" data-shape="rounded"><span class="shape-preview preview-rounded"></span><strong>Service</strong></button>
+            <button type="button" class="shape-card" data-shape="ellipse"><span class="shape-preview preview-ellipse"></span><strong>Data</strong></button>
+            <button type="button" class="shape-card" data-shape="diamond"><span class="shape-preview preview-diamond"></span><strong>Decision</strong></button>
+            <button type="button" class="shape-card" data-shape="triangle"><span class="shape-preview preview-triangle"></span><strong>Alert</strong></button>
+            <button type="button" class="shape-card" data-shape="note"><span class="shape-preview preview-note"></span><strong>Note</strong></button>
+            <button type="button" class="shape-card" data-shape="database"><span class="shape-preview preview-database"></span><strong>Database</strong></button>
+            <button type="button" class="shape-card" data-shape="text"><span class="shape-preview preview-text">T</span><strong>Text</strong></button>
           </div>
         </section>
 
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Quick actions</h2>
-            <span>Layout helpers</span>
+        <section class="panel-section" id="panel-custom" data-panel-id="panel-custom" data-visible-roles="architect,designer,engineer" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>Custom element studio</h2>
+              <span>Create reusable packages of related elements</span>
+            </div>
+            <span class="drag-hint">drag</span>
           </div>
-          <div class="quick-actions">
-            <button type="button" data-action="align-left">Align left</button>
-            <button type="button" data-action="center-board">Center</button>
-            <button type="button" data-action="middle-board">Middle</button>
-            <button type="button" data-action="bring-front">Bring front</button>
-            <button type="button" data-action="send-back">Send back</button>
-            <button type="button" data-action="toggle-grid">Toggle grid</button>
+          <div class="properties-form">
+            <label>
+              Package
+              <input type="text" id="customPackageName" placeholder="Payments kit">
+            </label>
+            <label>
+              Element name
+              <input type="text" id="customElementName" placeholder="Fraud service">
+            </label>
+            <label>
+              Base shape
+              <select id="customShapeType">
+                <option value="rounded">Rounded</option>
+                <option value="rectangle">Rectangle</option>
+                <option value="ellipse">Ellipse</option>
+                <option value="diamond">Diamond</option>
+                <option value="triangle">Triangle</option>
+                <option value="note">Note</option>
+                <option value="database">Database</option>
+                <option value="text">Text</option>
+              </select>
+            </label>
+            <div class="form-grid">
+              <label>
+                Fill
+                <input type="color" id="customFill" value="#1a2740">
+              </label>
+              <label>
+                Stroke
+                <input type="color" id="customStroke" value="#7ac9ff">
+              </label>
+            </div>
+            <div class="quick-actions single-column">
+              <button type="button" id="createCustomElementBtn">Create custom element</button>
+              <button type="button" class="secondary" id="saveSelectedElementBtn">Save selected element</button>
+            </div>
           </div>
+          <div class="packages-list" id="customPackagesList"></div>
         </section>
 
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Layers</h2>
-            <span>Selection order</span>
+        <section class="panel-section" id="panel-workspaces" data-panel-id="panel-workspaces" data-visible-roles="architect,engineer,analyst,designer" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>Workspaces</h2>
+              <span>Persist boards and switch contexts fast</span>
+            </div>
+            <span class="drag-hint">drag</span>
           </div>
-          <div class="layers-list" id="layersList"></div>
+          <div class="workspace-list" id="workspaceList"></div>
         </section>
       </aside>
 
-      <section class="board-stage">
+      <div class="splitter splitter-left" id="leftSplitter"></div>
+
+      <section class="center-column">
         <div class="stage-header">
           <div>
             <strong id="selectionTitle">Nothing selected</strong>
             <p id="selectionSubtitle">Build diagrams, wireframes, flows, and visual concepts.</p>
           </div>
-          <div class="board-status" id="boardStatus">Select a shape to begin.</div>
+          <div class="header-actions">
+            <div class="status-pill" id="boardStatus">Ready.</div>
+            <div class="zoom-tools">
+              <button type="button" id="zoomOutBtn">-</button>
+              <label class="zoom-readout" for="zoomRange"><span id="zoomPercent">100%</span></label>
+              <input type="range" id="zoomRange" min="50" max="180" step="10" value="100">
+              <button type="button" id="zoomInBtn">+</button>
+            </div>
+          </div>
         </div>
 
         <div class="board-scroll" id="boardScroll">
@@ -134,13 +321,48 @@
             </div>
           </div>
         </div>
+
+        <div class="log-splitter" id="logSplitter"></div>
+
+        <section class="log-console" id="logConsole">
+          <div class="panel-header">
+            <div>
+              <h2>App log</h2>
+              <span>Detailed event capture, searchable and streamable to AI</span>
+            </div>
+            <div class="toolbar-group">
+              <span class="mini-stat" id="logCount">0 entries</span>
+              <button type="button" class="ghost-btn" id="exportLogsBtn">Export logs</button>
+            </div>
+          </div>
+          <div class="log-toolbar">
+            <input type="text" id="logQueryInput" placeholder="Query logs, e.g. level:error category:workspace save">
+            <select id="logLevelFilter">
+              <option value="all">All levels</option>
+              <option value="trace">Trace</option>
+              <option value="info">Info</option>
+              <option value="warn">Warn</option>
+              <option value="error">Error</option>
+            </select>
+            <button type="button" id="clearLogsBtn" class="secondary">Clear</button>
+          </div>
+          <div class="log-layout">
+            <div class="log-list" id="logList"></div>
+            <pre class="log-details" id="logDetails">Select a log entry to inspect its details.</pre>
+          </div>
+        </section>
       </section>
 
-      <aside class="right-panel">
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Properties</h2>
-            <span>Edit selection</span>
+      <div class="splitter splitter-right" id="rightSplitter"></div>
+
+      <aside class="dock right-dock" id="rightDock">
+        <section class="panel-section" id="panel-properties" data-panel-id="panel-properties" data-visible-roles="architect,engineer,designer" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>Properties</h2>
+              <span>Edit shape and connector styling</span>
+            </div>
+            <span class="drag-hint">drag</span>
           </div>
           <form id="propertiesForm" class="properties-form">
             <label>
@@ -188,14 +410,16 @@
                 <option value="dashed">Dashed</option>
               </select>
             </label>
-            <div class="hint-text">Tip: double-click a node to edit its text quickly.</div>
           </form>
         </section>
 
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Board styling</h2>
-            <span>Artboard controls</span>
+        <section class="panel-section" id="panel-board-style" data-panel-id="panel-board-style" data-visible-roles="architect,designer,engineer" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>Board styling</h2>
+              <span>Artboard controls and quick helpers</span>
+            </div>
+            <span class="drag-hint">drag</span>
           </div>
           <div class="properties-form">
             <label>
@@ -206,13 +430,43 @@
               <input type="checkbox" id="gridToggle" checked>
               Show grid
             </label>
+            <div class="quick-actions">
+              <button type="button" data-action="align-left">Align left</button>
+              <button type="button" data-action="center-board">Center</button>
+              <button type="button" data-action="middle-board">Middle</button>
+              <button type="button" data-action="bring-front">Bring front</button>
+              <button type="button" data-action="send-back">Send back</button>
+              <button type="button" data-action="toggle-grid">Toggle grid</button>
+            </div>
           </div>
         </section>
 
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Local AI copilot</h2>
-            <span>Runs in your browser</span>
+        <section class="panel-section" id="panel-exports" data-panel-id="panel-exports" data-visible-roles="architect,designer,analyst" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>Exports</h2>
+              <span>Common formats for design handoff</span>
+            </div>
+            <span class="drag-hint">drag</span>
+          </div>
+          <div class="quick-actions export-grid">
+            <button type="button" data-export="png">PNG</button>
+            <button type="button" data-export="jpg">JPG</button>
+            <button type="button" data-export="webp">WEBP</button>
+            <button type="button" data-export="svg">SVG</button>
+            <button type="button" data-export="pdf">PDF</button>
+            <button type="button" data-export="json">JSON</button>
+            <button type="button" data-export="txt">TXT</button>
+          </div>
+        </section>
+
+        <section class="panel-section" id="panel-ai" data-panel-id="panel-ai" data-visible-roles="architect,engineer,designer,analyst" draggable="true">
+          <div class="panel-header panel-handle">
+            <div>
+              <h2>Local AI copilot</h2>
+              <span>Optional live app-log context included</span>
+            </div>
+            <span class="drag-hint">drag</span>
           </div>
           <div class="ai-panel">
             <label>
@@ -222,19 +476,26 @@
                 <option value="Xenova/flan-t5-base">FLAN-T5 Base - more capable</option>
               </select>
             </label>
-            <button type="button" id="downloadModelBtn">Download and load model</button>
-            <div class="ai-status" id="aiStatus">No model loaded.</div>
-            <div class="ai-progress">
-              <div class="ai-progress-bar" id="aiProgressBar"></div>
+            <div class="toolbar-group">
+              <button type="button" id="downloadModelBtn">Download model</button>
+              <label class="toggle-row inline-toggle">
+                <input type="checkbox" id="aiUseLogsToggle" checked>
+                Use logs
+              </label>
             </div>
-            <textarea id="aiPrompt" rows="6" placeholder="Ask for a diagram approach, naming ideas, component breakdown, or visual treatment."></textarea>
+            <div class="ai-status" id="aiStatus">No model loaded.</div>
+            <div class="ai-progress"><div class="ai-progress-bar" id="aiProgressBar"></div></div>
+            <div class="mini-stat" id="aiLogSyncStatus">AI log buffer: 0 entries</div>
+            <textarea id="aiPrompt" rows="5" placeholder="Ask for layout direction, a system diagram outline, naming ideas, or design cleanup advice."></textarea>
             <button type="button" id="runAiBtn">Run local AI</button>
             <textarea id="aiOutput" rows="8" readonly placeholder="Local AI responses appear here."></textarea>
           </div>
         </section>
       </aside>
-    </main>
+    </div>
   </div>
+
+  <div class="toast-stack" id="toastStack"></div>
 
   <script type="module" src="app.js"></script>
 </body>
