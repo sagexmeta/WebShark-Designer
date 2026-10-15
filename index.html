@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebShark Designer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">WS</div>
+        <div>
+          <h1>WebShark Designer</h1>
+          <p>Technical diagramming and visual design in one browser workspace.</p>
+        </div>
+      </div>
+
+      <div class="toolbar-group file-tools">
+        <button type="button" id="newBoardBtn">New board</button>
+        <button type="button" id="sampleBoardBtn">Load sample</button>
+        <button type="button" id="importJsonBtn">Import JSON</button>
+        <button type="button" id="exportJsonBtn">Export JSON</button>
+        <button type="button" id="exportSvgBtn">Export SVG</button>
+        <button type="button" id="exportPngBtn">Export PNG</button>
+        <input type="file" id="importJsonInput" accept=".json,application/json" hidden>
+      </div>
+
+      <div class="toolbar-group mode-tools">
+        <button type="button" class="tool-btn is-active" data-tool="select">Select</button>
+        <button type="button" class="tool-btn" data-tool="connect">Connect</button>
+        <button type="button" id="deleteSelectionBtn">Delete</button>
+        <button type="button" id="duplicateSelectionBtn">Duplicate</button>
+      </div>
+
+      <div class="toolbar-group zoom-tools">
+        <button type="button" id="zoomOutBtn">-</button>
+        <label class="zoom-readout" for="zoomRange">
+          <span id="zoomPercent">100%</span>
+        </label>
+        <input type="range" id="zoomRange" min="50" max="160" step="10" value="100">
+        <button type="button" id="zoomInBtn">+</button>
+      </div>
+    </header>
+
+    <main class="workspace-layout">
+      <aside class="left-panel">
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Shape library</h2>
+            <span>Click to add</span>
+          </div>
+          <div class="shape-grid" id="shapeLibrary">
+            <button type="button" class="shape-card" data-shape="rectangle">
+              <span class="shape-preview preview-rectangle"></span>
+              <strong>Process</strong>
+            </button>
+            <button type="button" class="shape-card" data-shape="rounded">
+              <span class="shape-preview preview-rounded"></span>
+              <strong>Service</strong>
+            </button>
+            <button type="button" class="shape-card" data-shape="ellipse">
+              <span class="shape-preview preview-ellipse"></span>
+              <strong>Data</strong>
+            </button>
+            <button type="button" class="shape-card" data-shape="diamond">
+              <span class="shape-preview preview-diamond"></span>
+              <strong>Decision</strong>
+            </button>
+            <button type="button" class="shape-card" data-shape="triangle">
+              <span class="shape-preview preview-triangle"></span>
+              <strong>Alert</strong>
+            </button>
+            <button type="button" class="shape-card" data-shape="note">
+              <span class="shape-preview preview-note"></span>
+              <strong>Note</strong>
+            </button>
+            <button type="button" class="shape-card" data-shape="database">
+              <span class="shape-preview preview-database"></span>
+              <strong>Database</strong>
+            </button>
+            <button type="button" class="shape-card" data-shape="text">
+              <span class="shape-preview preview-text">T</span>
+              <strong>Text</strong>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Quick actions</h2>
+            <span>Layout helpers</span>
+          </div>
+          <div class="quick-actions">
+            <button type="button" data-action="align-left">Align left</button>
+            <button type="button" data-action="center-board">Center</button>
+            <button type="button" data-action="middle-board">Middle</button>
+            <button type="button" data-action="bring-front">Bring front</button>
+            <button type="button" data-action="send-back">Send back</button>
+            <button type="button" data-action="toggle-grid">Toggle grid</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Layers</h2>
+            <span>Selection order</span>
+          </div>
+          <div class="layers-list" id="layersList"></div>
+        </section>
+      </aside>
+
+      <section class="board-stage">
+        <div class="stage-header">
+          <div>
+            <strong id="selectionTitle">Nothing selected</strong>
+            <p id="selectionSubtitle">Build diagrams, wireframes, flows, and visual concepts.</p>
+          </div>
+          <div class="board-status" id="boardStatus">Select a shape to begin.</div>
+        </div>
+
+        <div class="board-scroll" id="boardScroll">
+          <div class="board-content" id="boardContent">
+            <div class="board-surface" id="boardSurface">
+              <svg id="connectorLayer" class="connector-layer" aria-hidden="true">
+                <defs>
+                  <marker id="connectorArrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+                    <path d="M 0 0 L 12 6 L 0 12 z" fill="#6fc2ff"></path>
+                  </marker>
+                </defs>
+              </svg>
+              <div id="nodeLayer" class="node-layer"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="right-panel">
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Properties</h2>
+            <span>Edit selection</span>
+          </div>
+          <form id="propertiesForm" class="properties-form">
+            <label>
+              Label
+              <textarea id="propLabel" rows="3" placeholder="Selection text or connector label"></textarea>
+            </label>
+            <div class="form-grid">
+              <label>
+                Fill
+                <input type="color" id="propFill" value="#18243a">
+              </label>
+              <label>
+                Stroke
+                <input type="color" id="propStroke" value="#6fc2ff">
+              </label>
+              <label>
+                Text
+                <input type="color" id="propTextColor" value="#f5f7ff">
+              </label>
+              <label>
+                Opacity
+                <input type="range" id="propOpacity" min="20" max="100" value="100">
+              </label>
+              <label>
+                Stroke width
+                <input type="range" id="propStrokeWidth" min="1" max="8" value="2">
+              </label>
+              <label>
+                Font size
+                <input type="range" id="propFontSize" min="12" max="28" value="15">
+              </label>
+              <label>
+                Radius
+                <input type="range" id="propRadius" min="0" max="40" value="18">
+              </label>
+              <label>
+                Shadow
+                <input type="range" id="propShadow" min="0" max="30" value="10">
+              </label>
+            </div>
+            <label>
+              Line style
+              <select id="propDash">
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+              </select>
+            </label>
+            <div class="hint-text">Tip: double-click a node to edit its text quickly.</div>
+          </form>
+        </section>
+
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Board styling</h2>
+            <span>Artboard controls</span>
+          </div>
+          <div class="properties-form">
+            <label>
+              Background
+              <input type="color" id="boardBackground" value="#0b1220">
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="gridToggle" checked>
+              Show grid
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Local AI copilot</h2>
+            <span>Runs in your browser</span>
+          </div>
+          <div class="ai-panel">
+            <label>
+              Model
+              <select id="aiModelSelect">
+                <option value="Xenova/flan-t5-small">FLAN-T5 Small - fastest</option>
+                <option value="Xenova/flan-t5-base">FLAN-T5 Base - more capable</option>
+              </select>
+            </label>
+            <button type="button" id="downloadModelBtn">Download and load model</button>
+            <div class="ai-status" id="aiStatus">No model loaded.</div>
+            <div class="ai-progress">
+              <div class="ai-progress-bar" id="aiProgressBar"></div>
+            </div>
+            <textarea id="aiPrompt" rows="6" placeholder="Ask for a diagram approach, naming ideas, component breakdown, or visual treatment."></textarea>
+            <button type="button" id="runAiBtn">Run local AI</button>
+            <textarea id="aiOutput" rows="8" readonly placeholder="Local AI responses appear here."></textarea>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
