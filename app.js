@@ -792,6 +792,9 @@ function renderBoard() {
   dom.boardContent.style.setProperty("--zoom-scale", board.zoom);
   dom.boardSurface.style.setProperty("--board-bg", board.background);
   dom.boardSurface.classList.toggle("is-grid-hidden", !board.showGrid);
+  dom.connectorLayer.setAttribute("viewBox", `0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`);
+  dom.connectorLayer.setAttribute("width", String(BOARD_WIDTH));
+  dom.connectorLayer.setAttribute("height", String(BOARD_HEIGHT));
   renderNodes();
   renderConnectors();
   syncInspector();
@@ -1634,14 +1637,23 @@ async function loadAiModel() {
 }
 
 async function runLocalAi() {
-  if (!AI_RUNTIME.generator) {
-    await loadAiModel();
-  }
   const prompt = dom.aiPrompt.value.trim();
   if (!prompt) {
     dom.aiOutput.value = "Enter a prompt for the local AI copilot.";
     return;
   }
+  const commandResult = await executeAiActions(prompt);
+  if (commandResult.executed.length > 0 && !commandResult.remainingPrompt) {
+    dom.aiOutput.value = commandResult.executed.join("\n");
+    dom.aiStatus.textContent = "AI command actions completed locally.";
+    addLog("info", "ai", "AI command actions completed", { actions: commandResult.executed.length });
+    return;
+  }
+
+  if (!AI_RUNTIME.generator) {
+    await loadAiModel();
+  }
+
   const boardSummary = boardState().nodes.map((node) => `${node.label} (${node.type})`).join(", ") || "Board is empty.";
   const logSummary = state.settings.aiLogAccess && dom.aiUseLogsToggle.checked
     ? state.aiLogBuffer.slice(0, 20).join("\n")
@@ -1649,13 +1661,14 @@ async function runLocalAi() {
   const request = [
     "You are a concise technical diagramming and visual design copilot.",
     `Role context: ${ROLE_PRESETS[state.settings.role]?.label ?? state.settings.role}.`,
+    commandResult.executed.length > 0 ? `Actions already completed locally: ${commandResult.executed.join(" | ")}` : "",
     "Current board elements:",
     boardSummary,
     "Recent app logs:",
     logSummary,
-    `User request: ${prompt}`,
-    "Respond with clear next steps, visual guidance, and any simplifications you recommend.",
-  ].join("\n");
+    `User request: ${commandResult.remainingPrompt || prompt}`,
+    "If the user asks for instructions, answer directly. If the user asks for design help, give concrete steps.",
+  ].filter(Boolean).join("\n");
 
   dom.aiStatus.textContent = "Running local inference...";
   dom.aiOutput.value = "Generating...";
@@ -1671,6 +1684,140 @@ async function runLocalAi() {
   dom.aiOutput.value = output?.trim() || "The model did not return text.";
   dom.aiStatus.textContent = `${AI_RUNTIME.modelId} completed locally.`;
   addLog("info", "ai", "AI inference completed", { modelId: AI_RUNTIME.modelId, outputLength: dom.aiOutput.value.length });
+}
+
+async function executeAiActions(prompt) {
+  const normalized = prompt.trim();
+  const lower = normalized.toLowerCase();
+  const executed = [];
+  let remainingPrompt = normalized;
+  let boardChanged = false;
+
+  const shapeMap = {
+    process: "rectangle",
+    rectangle: "rectangle",
+    service: "rounded",
+    rounded: "rounded",
+    ellipse: "ellipse",
+    circle: "ellipse",
+    data: "ellipse",
+    decision: "diamond",
+    diamond: "diamond",
+    triangle: "triangle",
+    alert: "triangle",
+    note: "note",
+    database: "database",
+    db: "database",
+    text: "text",
+  };
+
+  const addMatch = normalized.match(/\b(?:add|create|insert)\s+(?:a|an)?\s*(process|rectangle|service|rounded|ellipse|circle|data|decision|diamond|triangle|alert|note|database|db|text)\b(?:.*?(?:called|named|labelled|labeled)\s+["“]?([^"\n]+?)["”]?(?:$|[,.]))?/i);
+  if (addMatch) {
+    const type = shapeMap[addMatch[1].toLowerCase()];
+    const label = addMatch[2]?.trim();
+    addNode(type, label ? { label } : {});
+    executed.push(`Added ${label ? `"${label}" ` : ""}${type}.`);
+    remainingPrompt = remainingPrompt.replace(addMatch[0], "").trim();
+    boardChanged = true;
+  }
+
+  const connectMatch = normalized.match(/\bconnect\s+["“]?(.+?)["”]?\s+(?:to|with|->)\s+["“]?(.+?)["”]?(?:$|[,.])/i);
+  if (connectMatch) {
+    const fromNode = findNodeByLabel(connectMatch[1]);
+    const toNode = findNodeByLabel(connectMatch[2]);
+    if (fromNode && toNode) {
+      const connector = createConnector(fromNode.id, toNode.id);
+      boardState().connectors.push(connector);
+      boardState().selection = { kind: "connector", id: connector.id };
+      executed.push(`Connected "${fromNode.label}" to "${toNode.label}".`);
+      addLog("info", "ai", "AI connected nodes", { from: fromNode.label, to: toNode.label });
+      remainingPrompt = remainingPrompt.replace(connectMatch[0], "").trim();
+      boardChanged = true;
+    }
+  }
+
+  if (/\b(?:show|display|turn on)\s+grid\b/i.test(normalized)) {
+    boardState().showGrid = true;
+    executed.push("Turned the grid on.");
+    remainingPrompt = remainingPrompt.replace(/\b(?:show|display|turn on)\s+grid\b/i, "").trim();
+    boardChanged = true;
+  }
+  if (/\b(?:hide|turn off)\s+grid\b/i.test(normalized)) {
+    boardState().showGrid = false;
+    executed.push("Turned the grid off.");
+    remainingPrompt = remainingPrompt.replace(/\b(?:hide|turn off)\s+grid\b/i, "").trim();
+    boardChanged = true;
+  }
+
+  const themeMatch = normalized.match(/\b(?:set|switch|change)\s+(?:the\s+)?theme\s+(?:to\s+)?(light|dark)\b/i);
+  if (themeMatch) {
+    state.settings.theme = themeMatch[1].toLowerCase();
+    syncUserProfile();
+    applySettingsToDocument();
+    executed.push(`Switched the theme to ${state.settings.theme}.`);
+    remainingPrompt = remainingPrompt.replace(themeMatch[0], "").trim();
+  }
+
+  const roleMatch = normalized.match(/\b(?:set|switch|change)\s+(?:my\s+)?role\s+(?:to\s+)?(architect|engineer|designer|analyst)\b/i);
+  if (roleMatch) {
+    state.settings.role = roleMatch[1].toLowerCase();
+    if (currentWorkspace()) {
+      currentWorkspace().role = state.settings.role;
+    }
+    syncUserProfile();
+    renderRoleView();
+    executed.push(`Switched the role to ${ROLE_PRESETS[state.settings.role].label}.`);
+    remainingPrompt = remainingPrompt.replace(roleMatch[0], "").trim();
+  }
+
+  const workspaceMatch = normalized.match(/\b(?:create|new)\s+workspace(?:\s+(?:called|named))?\s+["“]?([^"\n]+?)["”]?(?:$|[,.])/i);
+  if (workspaceMatch) {
+    const workspace = createDefaultWorkspace(workspaceMatch[1].trim());
+    state.workspaces.push(workspace);
+    loadWorkspace(workspace.id, false);
+    executed.push(`Created workspace "${workspace.name}".`);
+    remainingPrompt = remainingPrompt.replace(workspaceMatch[0], "").trim();
+    boardChanged = true;
+  }
+
+  if (/\b(?:save|store)\s+(?:the\s+)?workspace\b/i.test(lower) || /\b(?:save|store)\s+(?:the\s+)?work\b/i.test(lower)) {
+    saveCurrentWorkspace(false, "ai");
+    executed.push("Saved the current workspace.");
+    remainingPrompt = remainingPrompt.replace(/\b(?:save|store)\s+(?:the\s+)?workspace\b/i, "").replace(/\b(?:save|store)\s+(?:the\s+)?work\b/i, "").trim();
+  }
+
+  if (/\bload\s+sample\b/i.test(lower)) {
+    loadSampleBoard();
+    executed.push("Loaded the sample board.");
+    remainingPrompt = remainingPrompt.replace(/\bload\s+sample\b/i, "").trim();
+    boardChanged = true;
+  }
+
+  const exportMatch = normalized.match(/\bexport(?:\s+(?:the\s+)?(?:current\s+)?)?(?:as|to)?\s+(png|svg|pdf|jpg|webp|json|txt)\b/i);
+  if (exportMatch) {
+    await exportCurrent(exportMatch[1].toLowerCase());
+    executed.push(`Exported the current workspace as ${exportMatch[1].toUpperCase()}.`);
+    remainingPrompt = remainingPrompt.replace(exportMatch[0], "").trim();
+  }
+
+  if (boardChanged) {
+    saveCurrentWorkspace(false, "ai");
+    render();
+  } else if (executed.length > 0) {
+    render();
+    savePersistentState();
+  }
+
+  return {
+    executed,
+    remainingPrompt: remainingPrompt.replace(/^[,.;\s]+|[,.;\s]+$/g, ""),
+  };
+}
+
+function findNodeByLabel(input) {
+  const needle = input.trim().replace(/^["“]|["”]$/g, "").toLowerCase();
+  return boardState().nodes.find((node) => node.label.toLowerCase() === needle)
+    ?? boardState().nodes.find((node) => node.label.toLowerCase().includes(needle));
 }
 
 function queueAutosave() {
