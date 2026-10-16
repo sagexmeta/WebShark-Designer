@@ -156,53 +156,73 @@
           <p id="roleSummary">Technical design workspace.</p>
         </div>
       </div>
+      <nav class="menubar" id="menubar">
+        <details class="menu">
+          <summary>Workspace</summary>
+          <div class="menu-panel">
+            <label class="toolbar-label">
+              Active workspace
+              <select id="workspaceSelect"></select>
+            </label>
+            <button type="button" id="newWorkspaceBtn">New workspace</button>
+            <button type="button" id="saveWorkspaceBtn">Save workspace</button>
+            <button type="button" id="duplicateWorkspaceBtn">Duplicate workspace</button>
+            <button type="button" class="secondary" id="deleteWorkspaceBtn">Delete workspace</button>
+          </div>
+        </details>
 
-      <div class="workspace-toolbar toolbar-group">
-        <label class="toolbar-label">
-          Workspace
-          <select id="workspaceSelect"></select>
-        </label>
-        <button type="button" id="newWorkspaceBtn">New workspace</button>
-        <button type="button" id="saveWorkspaceBtn">Save workspace</button>
-        <button type="button" id="duplicateWorkspaceBtn">Duplicate</button>
-        <button type="button" class="secondary" id="deleteWorkspaceBtn">Delete</button>
-      </div>
+        <details class="menu">
+          <summary>Board</summary>
+          <div class="menu-panel">
+            <button type="button" id="newBoardBtn">New board</button>
+            <button type="button" id="sampleBoardBtn">Load sample</button>
+            <button type="button" id="importJsonBtn">Import</button>
+            <input type="file" id="importJsonInput" accept=".json,application/json" hidden>
+          </div>
+        </details>
 
-      <div class="toolbar-group file-tools">
-        <button type="button" id="newBoardBtn">New board</button>
-        <button type="button" id="sampleBoardBtn">Load sample</button>
-        <button type="button" id="importJsonBtn">Import</button>
-        <label class="toolbar-label">
-          Export
-          <select id="exportFormatSelect">
-            <option value="png">PNG</option>
-            <option value="svg">SVG</option>
-            <option value="pdf">PDF</option>
-            <option value="jpg">JPG</option>
-            <option value="webp">WEBP</option>
-            <option value="json">JSON</option>
-            <option value="txt">TXT</option>
-          </select>
-        </label>
-        <button type="button" id="exportCurrentBtn">Export current</button>
-        <button type="button" id="exportAllBtn">Export all</button>
-        <input type="file" id="importJsonInput" accept=".json,application/json" hidden>
-      </div>
+        <details class="menu">
+          <summary>Export</summary>
+          <div class="menu-panel">
+            <label class="toolbar-label">
+              Format
+              <select id="exportFormatSelect">
+                <option value="png">PNG</option>
+                <option value="svg">SVG</option>
+                <option value="pdf">PDF</option>
+                <option value="jpg">JPG</option>
+                <option value="webp">WEBP</option>
+                <option value="json">JSON</option>
+                <option value="txt">TXT</option>
+              </select>
+            </label>
+            <button type="button" id="exportCurrentBtn">Export current</button>
+            <button type="button" id="exportAllBtn">Export all</button>
+          </div>
+        </details>
 
-      <div class="toolbar-group mode-tools">
-        <button type="button" class="tool-btn is-active" data-tool="select">Select</button>
-        <button type="button" class="tool-btn" data-tool="connect">Connect</button>
-        <button type="button" id="deleteSelectionBtn">Delete</button>
-        <button type="button" id="duplicateSelectionBtn">Duplicate</button>
-      </div>
+        <details class="menu">
+          <summary>Tools</summary>
+          <div class="menu-panel">
+            <button type="button" class="tool-btn is-active" data-tool="select">Select</button>
+            <button type="button" class="tool-btn" data-tool="connect">Connect</button>
+            <button type="button" id="duplicateSelectionBtn">Duplicate selection</button>
+            <button type="button" id="deleteSelectionBtn">Delete selection</button>
+          </div>
+        </details>
 
-      <div class="toolbar-group utility-tools">
-        <button type="button" class="ghost-btn" id="themeToggleBtn">Toggle theme</button>
-        <button type="button" class="ghost-btn" id="openSettingsBtn">Options</button>
-        <div class="profile-chip">
-          <strong id="currentUserDisplay">Guest</strong>
-          <span id="currentRoleDisplay">Architect</span>
-        </div>
+        <details class="menu">
+          <summary>View</summary>
+          <div class="menu-panel">
+            <button type="button" class="ghost-btn" id="themeToggleBtn">Toggle theme</button>
+            <button type="button" class="ghost-btn" id="openSettingsBtn">Options</button>
+          </div>
+        </details>
+      </nav>
+
+      <div class="profile-chip">
+        <strong id="currentUserDisplay">Guest</strong>
+        <span id="currentRoleDisplay">Architect</span>
       </div>
     </header>
 

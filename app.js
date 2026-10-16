@@ -2405,3 +2405,12 @@ if (state.currentUserId && currentUser()) {
   dom.appShell.classList.add("hidden");
   addLog("trace", "boot", "App initialized without authenticated session");
 }
+
+document.addEventListener("click", (event) => {
+  document.querySelectorAll(".menu[open]").forEach((menu) => {
+    const clickedItem = event.target.closest(".menu-panel button");
+    if (!menu.contains(event.target) || (clickedItem && menu.contains(clickedItem))) {
+      menu.removeAttribute("open");
+    }
+  });
+});
