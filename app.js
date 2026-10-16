@@ -2267,6 +2267,12 @@ function bindEvents() {
   document.querySelectorAll(".shape-card").forEach((button) => {
     button.addEventListener("click", () => addNode(button.dataset.shape));
   });
+  document.querySelectorAll("[data-insert-shape]").forEach((button) => {
+    button.addEventListener("click", () => {
+      addNode(button.dataset.insertShape);
+      button.closest(".menu").open = false;
+    });
+  });
   document.querySelectorAll(".tool-btn").forEach((button) => {
     button.addEventListener("click", () => {
       state.activeTool = button.dataset.tool;

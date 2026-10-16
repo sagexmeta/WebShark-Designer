@@ -52,6 +52,7 @@ Then open `http://localhost:8080` in a modern browser.
 ## Usage notes
 
 - Click a shape in the left panel to add it to the current viewport.
+- Use **Insert** in the top menu to add a canvas element from the dropdown.
 - Use **Select** to move or resize objects.
 - Use **Connect** and then click two nodes to link them.
 - Use **Options** for theme, role, AI log access, motion, density, autosave, and other settings.
