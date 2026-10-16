@@ -2405,3 +2405,26 @@ if (state.currentUserId && currentUser()) {
   dom.appShell.classList.add("hidden");
   addLog("trace", "boot", "App initialized without authenticated session");
 }
+
+
+document.addEventListener("click", (event) => {
+  document.querySelectorAll("details.menu[open]").forEach((menu) => {
+    if (!menu.contains(event.target)) menu.removeAttribute("open");
+  });
+  const toggle = event.target.closest(".panel-toggle");
+  if (toggle) {
+    const section = toggle.closest(".panel-section");
+    const collapsed = section.classList.toggle("is-collapsed");
+    toggle.textContent = collapsed ? "+" : "–";
+  }
+});
+
+document.querySelectorAll(".panel-section > .panel-header").forEach((header) => {
+  if (header.querySelector(".panel-toggle")) return;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ghost-btn panel-toggle";
+  btn.title = "Collapse or expand panel";
+  btn.textContent = "–";
+  header.appendChild(btn);
+});

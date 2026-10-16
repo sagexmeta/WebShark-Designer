@@ -271,7 +271,8 @@ textarea {
 
 .topbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.2fr) minmax(260px, 1.2fr) auto auto;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto;
+  align-items: center;
   gap: 0.8rem;
   padding: 1rem 1.1rem;
   border-bottom: 1px solid var(--line);
@@ -908,11 +909,6 @@ body[data-glass="false"] .topbar {
   }
 }
 
-@media (max-width: 1600px) {
-  .topbar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 @media (max-width: 1200px) {
   .workspace-shell {
@@ -951,5 +947,73 @@ body[data-glass="false"] .topbar {
   .stage-header {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+.menu-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.menu {
+  position: relative;
+}
+
+.menu > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  user-select: none;
+}
+
+.menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu > summary::after {
+  content: " \25BE";
+}
+
+.menu[open] > summary {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  z-index: 60;
+}
+
+.menu-right .menu-panel {
+  left: auto;
+  right: 0;
+}
+
+.panel-section.is-collapsed > :not(.panel-header) {
+  display: none;
+}
+
+.panel-toggle {
+  padding: 0.2rem 0.55rem;
+}
+
+@media (max-width: 1200px) {
+  .topbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
